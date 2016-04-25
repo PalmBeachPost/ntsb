@@ -7,12 +7,17 @@ import sys
 from slugify import slugify, SLUG_OK        # from unicode-slugify
 import urllib2
 from collections import OrderedDict
+import csv
 
 
 # Many thanks to @rdmurphy for recommendation on unicode-slugify
 # To install dependencies:
 # pip install pyquery requests unicode-slugify
 
+
+
+# record download status if file already exists
+# if URL is blank, try alternate method
 
 
 #URL to look like this: http://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID=58493&StartRow=1&EndRow=3000&CurrentPage=1&order=1&sort=0&TXTSEARCHT=
@@ -101,6 +106,14 @@ for record in masterdict:
     except:
         print("Multiple download options found. Trying to get high-quality one for this record.")
         detailurl = detailurlprefix + pq(pq(docmasterhtml)('option')[-2]).attr('value')
+    if len(detailurl) <= 2 or detailurl == "http://dms.ntsb.gov/Download":             # If we got a blank or nearly blank download link ...
+        try:
+            detailurl = detailurlprefix + pq(pq(docmasterhtml)('option')[-2]).attr('value')     # Try to pull from "option" choices on download, taking the second-to-last one
+            print("Trying alternate download link, maybe, from " + docmasterurl)
+        except:
+            print("Still having problems finding download url from " + docmasterurl)
+            
+            
     time.sleep(0.5)
     #print(detailurl)
     masterdict[record]["detailurl"] = detailurl
@@ -122,11 +135,34 @@ for record in masterdict:
     detailurl = masterdict[record]["detailurl"]
     if os.path.exists(localfilename):
         print(localfilename + " already downloaded. Skipping.")
+        masterdict[record]['download'] = "File already existed"
     else:
         print("Fetching " + detailurl + " to " + localfilename + ".")
-        remotefilehandle = urllib2.urlopen(detailurl)
-        with open(localfilename, 'wb') as localfilehandle:
-            localfilehandle.write(remotefilehandle.read())
-        time.sleep(0.5)
-        
-   
+        try:
+            remotefilehandle = urllib2.urlopen(detailurl)
+            with open(localfilename, 'wb') as localfilehandle:
+                localfilehandle.write(remotefilehandle.read())
+            masterdict[record]['download'] = "Good"
+            time.sleep(0.5)
+        except:
+            print("*** HEY! This " + detailurl + " thing wasn't working for me. ***")
+            print("*** Try downloading the right version yourself from " + masterdict[docno]['docmasterurl'] + " ***")
+            masterdict[record]['download'] = "Bad"
+
+           
+#Let's build a CSV outta this thing.       
+print("Attempting to build a CSV")    
+with open( docketid + ".csv", "wb") as csvfile:
+    put = csv.writer(csvfile)
+    headerrowdict = OrderedDict(sorted(masterdict[record].items(), key=lambda t: t[0]))     # using last record. It'll be fine.
+    headerrow = ["accidentnumber", "docketid", "recordnumber"]
+    for key, value in headerrowdict.iteritems():
+        headerrow.append(key)
+    put.writerow(headerrow)
+    for record in masterdict:
+        row = [accidentnumber, docketid, str(record)]
+        recorddict = OrderedDict(sorted(masterdict[record].items(), key=lambda t: t[0]))
+        for key, value in recorddict.iteritems():
+            row.append(str(recorddict[key]))
+        put.writerow(row)
+       
