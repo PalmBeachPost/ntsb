@@ -47,9 +47,9 @@ print(docketurl)
 raw = requests.get(docketurl)
 html = pq(raw.content)
 
-accidentnumber = str(pq(html)('title').text()).split()[2]           # Grab the third word from the title tag
+accidentnumber = unicode(pq(html)('title').text()).split()[2]           # Grab the third word from the title tag
 allrows = pq(html)('tr').filter('.odd') + pq(html)('tr').filter('.leave')
-print("Found " + str(len(allrows('tr'))) + " things to download")
+print("Found " + unicode(len(allrows('tr'))) + " things to download")
 totalpages = 0
 totalphotos = 0
 masterdict = {}
@@ -101,7 +101,7 @@ for record in masterdict:
     masterdict[record]["detailurl"] = detailurl
     localfilename = masterdict[record]['doctitle']
     localfilename = slugify(localfilename, only_ascii=True)      # Clean up text, eliminate spaces
-    localfilename = localfilename + "_No" + str(record)      # append document number
+    localfilename = localfilename + "_No" + unicode(record)      # append document number
     localfilename = localfilename + "." + detailurl.split(".")[-1]  # append correct file extension
     localfilename = docketid + "/" + localfilename  #use docketid name for subdirectory
     masterdict[record]["localfilename"] = localfilename
@@ -137,14 +137,14 @@ print("Attempting to build a CSV")
 with open( docketid + ".csv", "wb") as csvfile:
     put = csv.writer(csvfile)
     headerrowdict = OrderedDict(sorted(masterdict[record].items(), key=lambda t: t[0]))     # using last record. It'll be fine.
-    headerrow = ["accidentnumber", "docketid", "recordnumber"]
+    headerrow = [unicode("accidentnumber").encode("UTF-8"), unicode("docketid").encode("UTF-8"), unicode("recordnumber").encode("UTF-8")]
     for key, value in headerrowdict.iteritems():
-        headerrow.append(key)
+        headerrow.append(unicode(key).encode("UTF-8"))
     put.writerow(headerrow)
     for record in masterdict:
-        row = [accidentnumber, docketid, str(record)]
+        row = [unicode(accidentnumber).encode("UTF-8"), unicode(docketid).encode("UTF-8"), unicode(record).encode("UTF-8")]
         recorddict = OrderedDict(sorted(masterdict[record].items(), key=lambda t: t[0]))
         for key, value in recorddict.iteritems():
-            row.append(str(recorddict[key]))
+            row.append(unicode(recorddict[key]).encode("UTF-8"))
         put.writerow(row)
        
