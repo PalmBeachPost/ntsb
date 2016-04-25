@@ -4,18 +4,14 @@ import os
 import time
 import argparse
 import sys
-from slugify import slugify, SLUG_OK        # from unicode-slugify
+from slugify import slugify        # from unicode-slugify
 import urllib2
 from collections import OrderedDict
 import csv
 
-
 # Many thanks to @rdmurphy for recommendation on unicode-slugify
 # To install dependencies:
 # pip install pyquery requests unicode-slugify
-
-
-#URL to look like this: http://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID=58493&StartRow=1&EndRow=3000&CurrentPage=1&order=1&sort=0&TXTSEARCHT=
 
 docketurlprefix = "http://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID="
 docketurlsuffix = "&StartRow=1&EndRow=3000&CurrentPage=1&order=1&sort=0&TXTSEARCHT="
@@ -25,9 +21,9 @@ detailurlprefix = "http://dms.ntsb.gov/"
 
 sleeptime = 0.5         # Delay between scrapes and downloads. 0.3 timed out sometimes. 0.5 seemed OK
 
-
 parser = argparse.ArgumentParser(description="This file attempts to fetch National Transportation Safety Board docket files.")
 parser.add_argument('docketid', metavar='docketid', help='docketID number from NTSB URL for the file you want')
+
 try:
     args = parser.parse_args()
 except:
@@ -94,23 +90,19 @@ for record in masterdict:
             print("Trying alternate download link, maybe, from " + docmasterurl)
         except:
             print("Still having problems finding download url from " + docmasterurl)
-            
-            
-    time.sleep(sleeptime)
-    #print(detailurl)
+
+    time.sleep(sleeptime)       # Wait to avoid pounding server
     masterdict[record]["detailurl"] = detailurl
     localfilename = masterdict[record]['doctitle']
     localfilename = slugify(localfilename, only_ascii=True)      # Clean up text, eliminate spaces
     localfilename = localfilename + "_No" + unicode(record)      # append document number
     localfilename = localfilename + "." + detailurl.split(".")[-1]  # append correct file extension
-    localfilename = docketid + "/" + localfilename  #use docketid name for subdirectory
+    localfilename = docketid + "/" + localfilename  # use docketid name for subdirectory
     masterdict[record]["localfilename"] = localfilename
-    
 
 # Let's get a master dictionary sorted by document number, so we can download in order, maybe.
 masterdict = OrderedDict(sorted(masterdict.items(), key=lambda t: t[0]))
-   
-    
+
 # Download files if we don't already have them
 for record in masterdict:
     localfilename = masterdict[record]["localfilename"]
@@ -120,21 +112,25 @@ for record in masterdict:
         masterdict[record]['download'] = "File already existed"
     else:
         print("Fetching " + detailurl + " to " + localfilename + ".")
-        try:
-            remotefilehandle = urllib2.urlopen(detailurl)
-            with open(localfilename, 'wb') as localfilehandle:
-                localfilehandle.write(remotefilehandle.read())
-            masterdict[record]['download'] = "Good"
-            time.sleep(sleeptime)
-        except:
-            print("*** HEY! This " + detailurl + " thing wasn't working for me. ***")
-            print("*** Try downloading the right version yourself from " + masterdict[docno]['docmasterurl'] + " ***")
-            masterdict[record]['download'] = "Bad"
+        attempts = 0
+        success = False
+        while attempts < 3 and not success:
+            try:
+                remotefilehandle = urllib2.urlopen(detailurl)
+                with open(localfilename, 'wb') as localfilehandle:
+                    localfilehandle.write(remotefilehandle.read())
+                masterdict[record]['download'] = "Good"
+                time.sleep(sleeptime)
+                success = True
+            except:
+                print("*** HEY! This " + detailurl + " thing wasn't working for me. ***")
+                print("*** Try downloading the right version yourself from " + masterdict[docno]['docmasterurl'] + " ***")
+                masterdict[record]['download'] = "Bad"
+                attempts += 1
+                time.sleep(3*sleeptime)             # Extra margins in case of time out or network problems.
 
-           
-#Let's build a CSV outta this thing.       
-print("Attempting to build a CSV")    
-with open( docketid + ".csv", "wb") as csvfile:
+print("Attempting to build a CSV")
+with open(docketid + ".csv", "wb") as csvfile:
     put = csv.writer(csvfile)
     headerrowdict = OrderedDict(sorted(masterdict[record].items(), key=lambda t: t[0]))     # using last record. It'll be fine.
     headerrow = [unicode("accidentnumber").encode("UTF-8"), unicode("docketid").encode("UTF-8"), unicode("recordnumber").encode("UTF-8")]
@@ -147,4 +143,4 @@ with open( docketid + ".csv", "wb") as csvfile:
         for key, value in recorddict.iteritems():
             row.append(unicode(recorddict[key]).encode("UTF-8"))
         put.writerow(row)
-       
+print("CSV should be saved at " + docketid + ".csv")
