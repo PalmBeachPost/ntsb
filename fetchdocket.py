@@ -15,34 +15,16 @@ import csv
 # pip install pyquery requests unicode-slugify
 
 
-
-# record download status if file already exists
-# if URL is blank, try alternate method
-
-
 #URL to look like this: http://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID=58493&StartRow=1&EndRow=3000&CurrentPage=1&order=1&sort=0&TXTSEARCHT=
-
-
-## Get file
-## Parse to get accident number
-## Make directory with accident number, not docket number, if it doesn't already exist
-## Parse to get list of document numbers, URLs, titles
-## Possibly clean up titles some -- bad characters not translating? Maybe use Django slugify code
-    ## http://stackoverflow.com/questions/295135/turn-a-string-into-a-valid-filename-in-python
-## For each master URL, go into the page and parse the correct file URL (highest quality download, etc.), add to list of to-dos
-## Save each document with name, appropriate extension (recycle extension)
-## Save our list as a CSV or similar for later reference    
-    
-
-#if os.path.isfile(target):
-#	print("Deleting old file " + target)
-#	os.remove(target)
 
 docketurlprefix = "http://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID="
 docketurlsuffix = "&StartRow=1&EndRow=3000&CurrentPage=1&order=1&sort=0&TXTSEARCHT="
 
 masterurlprefix = "http://dms.ntsb.gov/pubdms/search/"
 detailurlprefix = "http://dms.ntsb.gov/"
+
+sleeptime = 0.5         # Delay between scrapes and downloads. 0.3 timed out sometimes. 0.5 seemed OK
+
 
 parser = argparse.ArgumentParser(description="This file attempts to fetch National Transportation Safety Board docket files.")
 parser.add_argument('docketid', metavar='docketid', help='docketID number from NTSB URL for the file you want')
@@ -114,7 +96,7 @@ for record in masterdict:
             print("Still having problems finding download url from " + docmasterurl)
             
             
-    time.sleep(0.5)
+    time.sleep(sleeptime)
     #print(detailurl)
     masterdict[record]["detailurl"] = detailurl
     localfilename = masterdict[record]['doctitle']
@@ -143,7 +125,7 @@ for record in masterdict:
             with open(localfilename, 'wb') as localfilehandle:
                 localfilehandle.write(remotefilehandle.read())
             masterdict[record]['download'] = "Good"
-            time.sleep(0.5)
+            time.sleep(sleeptime)
         except:
             print("*** HEY! This " + detailurl + " thing wasn't working for me. ***")
             print("*** Try downloading the right version yourself from " + masterdict[docno]['docmasterurl'] + " ***")
