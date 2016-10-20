@@ -1,10 +1,10 @@
 from pyquery import PyQuery as pq
 import requests
+from slugify import slugify        # from unicode-slugify
 import os
 import time
 import argparse
 import sys
-from slugify import slugify        # from unicode-slugify
 import urllib2
 from collections import OrderedDict
 import csv
