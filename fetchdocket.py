@@ -13,11 +13,11 @@ import csv
 # To install dependencies:
 # pip install pyquery requests unicode-slugify
 
-docketurlprefix = "http://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID="
+docketurlprefix = "https://dms.ntsb.gov/pubdms/search/hitlist.cfm?docketID="
 docketurlsuffix = "&StartRow=1&EndRow=3000&CurrentPage=1&order=1&sort=0&TXTSEARCHT="
 
-masterurlprefix = "http://dms.ntsb.gov/pubdms/search/"
-detailurlprefix = "http://dms.ntsb.gov/"
+masterurlprefix = "https://dms.ntsb.gov/pubdms/search/"
+detailurlprefix = "https://dms.ntsb.gov/"
 
 sleeptime = 0.5         # Delay between scrapes and downloads. 0.3 timed out sometimes. 0.5 seemed OK
 
