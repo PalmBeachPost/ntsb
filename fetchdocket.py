@@ -8,6 +8,7 @@ import sys
 import urllib2
 from collections import OrderedDict
 import csv
+import datetime
 
 # Many thanks to @rdmurphy for recommendation on unicode-slugify
 # To install dependencies:
@@ -54,9 +55,12 @@ masterdict = {}
 for row in allrows('tr'):
     docno = int(pq(pq(row)('td')[0]).text().strip())
     masterdict[docno] = {}
-    masterdict[docno]['docdate'] = pq(pq(row)('td')[1]).text()
+    docdate = pq(pq(row)('td')[1]).text().strip()
     masterdict[docno]['doctitle'] = unicode(pq(pq(row)('td')[2]).text())    # This needs to get cleaned up
     masterdict[docno]['docmasterurl'] = masterurlprefix + pq(pq(pq(pq(row)('td')[2])('a'))).attr('href')
+    docdate = datetime.datetime.strptime(docdate, "%b %d, %Y")
+    docdate = datetime.datetime.strftime(docdate, "%Y-%m-%d")
+    masterdict[docno]['docdate'] = docdate
     try:
         docpages = int(unicode(pq(pq(row)('td')[3]).html()).replace("--", "").strip())
     except:
@@ -94,8 +98,10 @@ for record in masterdict:
     time.sleep(sleeptime)       # Wait to avoid pounding server
     masterdict[record]["detailurl"] = detailurl
     localfilename = masterdict[record]['doctitle']
+    docdate = masterdict[record]['docdate']
     localfilename = slugify(localfilename, only_ascii=True)      # Clean up text, eliminate spaces
-    localfilename = localfilename + "_No" + unicode(record)      # append document number
+    # localfilename = localfilename + "_No" + unicode(record)      # append document number
+    localfilename = docdate + "-" + localfilename   # prepend date
     localfilename = localfilename + "." + detailurl.split(".")[-1]  # append correct file extension
     localfilename = docketid + "/" + localfilename  # use docketid name for subdirectory
     masterdict[record]["localfilename"] = localfilename
