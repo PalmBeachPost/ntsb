@@ -5,7 +5,7 @@ import os
 import time
 import argparse
 import sys
-import urllib2
+# import urllib2
 from collections import OrderedDict
 import csv
 import datetime
@@ -122,9 +122,11 @@ for record in masterdict:
         success = False
         while attempts < 3 and not success:
             try:
-                remotefilehandle = urllib2.urlopen(detailurl)
+                r = requests.get(detailurl, stream=True)
                 with open(localfilename, 'wb') as localfilehandle:
-                    localfilehandle.write(remotefilehandle.read())
+                    for chunk in r.iter_content(chunk_size=100*1024):
+                        if chunk:
+                            localfilehandle.write(chunk)
                 masterdict[record]['download'] = "Good"
                 time.sleep(sleeptime)
                 success = True
