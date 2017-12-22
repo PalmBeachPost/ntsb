@@ -99,7 +99,7 @@ for record in masterdict:
     masterdict[record]["detailurl"] = detailurl
     localfilename = masterdict[record]['doctitle']
     docdate = masterdict[record]['docdate']
-    localfilename = slugify(localfilename, only_ascii=True)      # Clean up text, eliminate spaces
+    localfilename = slugify(localfilename)      # Clean up text, eliminate spaces
     # localfilename = localfilename + "_No" + unicode(record)      # append document number
     localfilename = docdate + "-" + localfilename   # prepend date
     localfilename = localfilename + "." + detailurl.split(".")[-1]  # append correct file extension
