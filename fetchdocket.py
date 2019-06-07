@@ -1,6 +1,7 @@
 from pyquery import PyQuery as pq
 import requests
 from slugify import slugify        # from awesome-slugify
+
 import os
 import time
 import argparse
@@ -108,6 +109,19 @@ for record in masterdict:
 # Let's get a master dictionary sorted by document number, so we can download in order, maybe.
 masterdict = OrderedDict(sorted(masterdict.items(), key=lambda t: t[0]))
 
+
+"""
+Need to better understand earlier error here later, not today. For now a workaround.
+
+Fetching https://dms.ntsb.gov/Download to 8035/1997-03-19-photo-1-n927da-on-runway-17-after-coming-to-a-stop-the-oil-streak-is-visible-left-of-the-runway-centerline.gov/Download.
+Traceback (most recent call last):
+  File "fetchdocket.py", line 124, in <module>
+    with open(localfilename, 'wb') as localfilehandle:
+FileNotFoundError: [Errno 2] No such file or directory: '8035/1997-03-19-photo-1-n927da-on-runway-17-after-coming-to-a-stop-the-oil-streak-is-visible-left-of-the-runway-centerline.gov/Download'
+
+"""
+
+
 # Download files if we don't already have them
 for record in masterdict:
     localfilename = masterdict[record]["localfilename"]
@@ -121,13 +135,20 @@ for record in masterdict:
         attempts = 0
         success = False
         r = requests.get(detailurl, stream=True)
-        with open(localfilename, 'wb') as localfilehandle:
-            for chunk in r.iter_content(chunk_size=100*1024):
-                if chunk:
-                    localfilehandle.write(chunk)
-        masterdict[record]['download'] = "Good"
-        time.sleep(sleeptime)
-        success = True
+        try:
+            with open(localfilename, 'wb') as localfilehandle:
+                for chunk in r.iter_content(chunk_size=100*1024):
+                    if chunk:
+                        localfilehandle.write(chunk)
+            masterdict[record]['download'] = "Good"
+            time.sleep(sleeptime)
+            success = True
+
+        except:
+            print(f"!!! Error trying to write to {localfilename}")
+            masterdict[record]['download'] = "Bad"
+            time.sleep(sleeptime)
+            success = False
         
         while attempts < 3 and not success:
             try:
